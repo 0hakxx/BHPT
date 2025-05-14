@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://pplx-res.cloudinary.com/image/private/user_uploads/40985373/2eb1ee3d-0347-4c26-b820-024e6025cf22/image.jpg" width="200" alt="Red Raccoon Logo"/>
+  <img src="[https://pplx-res.cloudinary.com/image/private/user_uploads/40985373/2eb1ee3d-0347-4c26-b820-024e6025cf22/image.jpg](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQST8jIQD-tUd0pNvh6S2KvQMoENoV2gkr68A&s)" width="200" alt="Red Raccoon Logo"/>
 </p>
 
 <h1 align="center">🦝 BHPT 호스트 기반 모의해킹🦝</h1>
