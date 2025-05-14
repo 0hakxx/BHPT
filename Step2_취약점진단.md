@@ -62,7 +62,9 @@
 - **nmap을 통한 FTP 서비스 및 버전 확인**
     ```
     nmap -sV -p 21 -Pn -sC [타겟IP]
-	nmap -p 21 -sV --script="*ftp*" -Pn -n --open [타겟IP]
+    ```
+    ```
+	nnmap -p 21 -sV --script="*ftp*" -Pn -n --open [타겟IP]
     ```
     - 결과 예시:  
       21/tcp open  ftp     vsftpd 2.3.4
@@ -397,7 +399,7 @@
 - **7. 상세 취약점 진단**
   - `nmap -p 445 -sV --script="smb-vuln-*" -Pn -n --open <대상IP>`	
 	- namp의 기본 제공하는 smb 관련 모든 스크립트로 진단 수행
-## 실무 팁 및 주의사항
+## ⚠ 실무 팁 및 주의사항
 - SMB는 윈도우 환경에서 매우 중요한 네트워크 프로토콜로, 취약점 진단 및 대응이 반드시 필요합니다.  
 
 ---

