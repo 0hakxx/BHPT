@@ -2,7 +2,7 @@
   <img src="https://blog.redraccoon.kr/assets/images/Color%20logo%20-%20no%20background-1.png" width="200" alt="Red Raccoon Logo"/>
 </p>
 
-<h1 align="center">🦝 BHPT 호스트 기반 모의해킹 실습 저장🦝</h1>
+<h1 align="center">🦝 BHPT 호스트 기반 모의해킹🦝</h1>
 <p align="center">
   <b>by Red Raccoon</b>
 </p>
