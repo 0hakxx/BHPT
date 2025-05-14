@@ -4,7 +4,7 @@
 
 <h1 align="center">🦝 BHPT 호스트 기반 모의해킹🦝</h1>
 <p align="center">
-  <b>by Red Raccoon</b>
+  <b>by Inflearn 강의를 통한 스터디 내용입니다</b>
 </p>
 
 ---
