@@ -1,14 +1,43 @@
 # 정보수집 및 Nmap 스캔 정리
 
-## Nmap 주의 사항!
+## Nmap 권고사항
 
 | 내용                                                                                          |
 |---------------------------------------------------------------------------------------------|
-| `nmap -p 22 <IP>` 명령어로 22번 포트만 스캐닝하여도, ICMP,80,443 포트 중 하나라도 Open되어야 포트 스캔이 진행됨 (기본 옵션 동작). |
-| 대부분의 호스트는 ICMP,80,443 포트를 사용하지 않는 경우가 많으므로 `-Pn` 옵션을 지정해주는 것이 좋음.                           |
+| `nmap -p 22 <IP>` 명령어로 22번 포트만 스캐닝하여도, ICMP,80,443 포트 중 하나라도 Open되어야 포트 스캔이 진행됨 (nmap 기본 동작). |
+| 그러나 대부분의 호스트는 ICMP,80,443 포트를 사용하지 않는 경우가 많으므로 `-Pn` 옵션을 지정해주는 것이 좋음.                           |
 | `--open` 옵션을 추가로 주어, 열린 포트만 결과 출력                                                |
 | 전체 포트(`-p-`) 사용하여  Opened/Closed 확인 후 , Opened 포트 대상으로 `-sV`, `-sC` 옵션을 주어 사용 권고            |
+| `-oA <파일명>`               | 결과를 모든 형식(텍스트, XML, grepable)으로 저장 권고.|
 
+
+## 최적화된 Nmap 사용법
+
+### 1. 네트워크 대역(여러 호스트) 스캔 예시
+
+- **네트워크에 연결된 호스트 탐색**
+  - ```bash
+	nmap -sn 192.168.1.0/24
+	```
+
+### 2. 전체 포트 스캔 및 상위 1000 포트 동시 스캔
+
+- **전체 포트 스캔 (1~65535)**
+  - ```bash
+	sudo nmap -p- --max-retries 1 -sS -Pn -n --open [타겟 IP] -oA tcpAll
+	```
+- **상위 1000개 포트 빠른 스캔 (전체 포트 스캔과 동시 진행)**
+  - ```bash
+	sudo nmap --top-ports 1000 -Pn -n --open -sS [타겟IP] -oA tcp1000
+	```
+> 두 개의 터미널에서 동시에 실행하면 전체 포트와 주요 포트를 빠르게 병행 탐색할 수 있음.
+
+### 3. 상세 서비스 및 버전 스캔
+
+- **열린 포트에 대해 상세 스캔**
+  - ```bash
+	nmap -p <열린포트1>,<열린포트2> -sV -sC -Pn -n --open --min-rate 2000 [타겟IP] -oA tclDetailed
+	```
 ---
 
 ## 상태(Status) 종류
@@ -134,7 +163,7 @@
 - **Nmap NSE란?**
   - Nmap의 플러그인 같은 개념으로, 추가 정보 수집과 취약점 진단을 위한 스크립트 제공.
   - 스크립트들은 `/usr/share/nmap/scripts` 경로에 위치.
-    
+
   - 원하는 서비스 관련 스크립트 찾기:  
     `ls -alh /usr/share/nmap/scripts | grep -i <서비스명>`
 
@@ -145,31 +174,31 @@
     → NSE 이름 중 ssh가 들어가는 스크립트 모두 실행
   - `nmap -p 22 --script ssh-auth-methods --script-args "ssh.user=root" <IP>`
   - `--script <이름> --script-args "<모듈>.<파라미터>=<값>"`
-  
- - **참고**
-  - 구글링 및 [nmap.org](https://nmap.org)에서 스크립트 정보 확인
-  
-  
+
+- **참고**
+- 구글링 및 [nmap.org](https://nmap.org)에서 스크립트 정보 확인
+
+
 ## 웹 서비스/포트 오픈 예시
 - **사용법 예시**
 - 브라우저에서 포트(예: 8081)로 접근 시 웹 서비스가 정상적으로 오픈 확인
-	- 예시: `http://172.31.253.158:8081` 접속 시 워드프레스 서비스 사용 중 확인
+  - 예시: `http://172.31.253.158:8081` 접속 시 워드프레스 서비스 사용 중 확인
 - 워드 프레스 NSE 스크립트 다운로드
-	-`cd /usr/share/nmap/scripts`
-	- `wget https://github.com/hackertarget/nmap-nse-scripts/blob/master/http-wordpress-themes.nse`
+  -`cd /usr/share/nmap/scripts`
+  - `wget https://github.com/hackertarget/nmap-nse-scripts/blob/master/http-wordpress-themes.nse`
 - NSE 스크립트 사용
-	-`nmap -p 8081 -sV -Pn --script http-wordpress-themes 172.31.253.158`
+  -`nmap -p 8081 -sV -Pn --script http-wordpress-themes 172.31.253.158`
 
 ---
 
 ## Nmap 추가 활용 팁
 
-- `vi /usr/share/nmap/nmap-service-probes`  
-  - Nmap이 서비스 버전 탐지 시 참조하는 프로브(probe) 정의 파일.  
+- `vi /usr/share/nmap/nmap-service-probes`
+  - Nmap이 서비스 버전 탐지 시 참조하는 프로브(probe) 정의 파일.
   - 직접 편집하거나 커스터마이징하여 새로운 서비스 탐지 가능.
 
-- `ls -al /usr/share/nmap/scripts`  
-  - Nmap 스크립트 엔진(NSE)에서 사용하는 다양한 스크립트가 위치한 디렉토리.  
+- `ls -al /usr/share/nmap/scripts`
+  - Nmap 스크립트 엔진(NSE)에서 사용하는 다양한 스크립트가 위치한 디렉토리.
   - 스크립트를 활용해 취약점 탐지, 정보 수집, 자동화된 공격 시나리오 실행 가능.
 
 ---
